@@ -18,15 +18,15 @@ data              <- read.table( file, sep = ",", header = FALSE, na.strings = "
 nrows             <- nrow( data )
 print(paste( "Data frame number of rows is: ", nrows ))
 
+# set column names, can be found in adult.names file in the repo
+colnames( data ) <- c( "age", "workclass", "fnlwgt", "education", "education_num", "marital_status", "occupation", "relationship", 
+                       "race", "sex", "capital_gain", "capital_loss", "hours_per_week", "native_country", "income" )
+
 # let us now remove the missing values, and re-enumerate the rows
 data              <- na.omit( data )
 nrows             <- nrow( data )
 row.names( data ) <- 1:nrows
 print( paste( "After cleaning, the number of rows is: ", nrows ))
-
-# set column names, can be found in adult.names file in the repo
-colnames( data ) <- c( "age", "workclass", "fnlwgt", "education", "education_num", "marital_status", "occupation", "relationship", 
-                        "race", "sex", "capital_gain", "capital_loss", "hours_per_week", "native_country", "income" )
 
 # separate text and number columns
 train_text        <- data[,1:14] %>% select_if( is.character )
@@ -72,16 +72,16 @@ model %>%
   layer_dropout( rate = 0.2 ) %>%
   layer_dense( name = 'OutputLayer', units = 1, activation = 'sigmoid' )
 
-# compile model
+# compile the model
 model %>% compile(
   loss = 'binary_crossentropy',
-  optimizer = optimizer_sgd( lr = 0.01, momentum = 0, decay = 0 ),
+  optimizer = 'adam',
   metrics = 'accuracy')
 
 # number of epoch
 epochs <- 100
 
-# set callback
+# set callbacks
 print_callback <- callback_lambda(
   on_epoch_end = function( e,l )
   {
@@ -91,7 +91,8 @@ print_callback <- callback_lambda(
   }
 )
 
-stop_callback = callback_early_stopping( monitor = "accuracy", min_delta = 0, patience = 10, verbose = 0, mode = "auto" )
+stop_callback = callback_early_stopping( 
+  monitor = "accuracy", min_delta = 0.2, patience = 10, verbose = 0, mode = "auto" )
 
 # train the model
 stats <- model %>% fit(
@@ -100,14 +101,13 @@ stats <- model %>% fit(
   epochs = epochs,
   batch = 16,
   validation_split = .15,
-  verbose = 1,
+  verbose = 2,
   callbacks = list( 
-      print_callback,
-      stop_callback
-    )
+    print_callback,
+    stop_callback
+  )
 )
 
 # evaluate the model against the test set
 model %>%
   keras::evaluate( test_set, test_labels )
-
